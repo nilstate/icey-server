@@ -16,7 +16,7 @@
 - The startup banner prints which config file was loaded (or that defaults are in use) and scrubs `user:pass@` from RTSP source URLs; `--doctor` output scrubs them too.
 - Docker: `HEALTHCHECK` wired to `/api/health` in both the Dockerfile and Compose, `.dockerignore` added, `curl` included in the image.
 - Example configs now surface `auth.token`, `turn.secret`, and `turn.credentialTtlSeconds`, and align on the `h264` auto-pick codec sentinel.
-- Bumped the pinned `icey` dependency from `2.4.9` to `2.4.11`.
+- Bumped the pinned `icey` dependency from `2.4.9` to `2.5.0`.
 
 ## 0.2.3 - 2026-04-28
 
