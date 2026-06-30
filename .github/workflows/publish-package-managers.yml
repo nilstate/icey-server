@@ -29,6 +29,7 @@ jobs:
           repository: nilstate/icey
           ref: ${{ steps.context.outputs.icey_version }}
           path: icey
+          submodules: recursive
 
       - name: Validate release metadata
         run: bash ./scripts/validate-release-metadata.sh
