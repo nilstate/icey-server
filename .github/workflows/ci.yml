@@ -10,14 +10,14 @@ jobs:
   linux:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Read release context
         id: context
         run: echo "icey_version=$(tr -d '[:space:]' < ICEY_VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout icey
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: nilstate/icey
           ref: ${{ steps.context.outputs.icey_version }}

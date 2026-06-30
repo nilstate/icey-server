@@ -13,7 +13,7 @@ jobs:
       cli_version: ${{ steps.context.outputs.cli_version }}
       icey_version: ${{ steps.context.outputs.icey_version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -24,7 +24,7 @@ jobs:
           echo "icey_version=$(tr -d '[:space:]' < ICEY_VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout icey
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: nilstate/icey
           ref: ${{ steps.context.outputs.icey_version }}
@@ -94,12 +94,12 @@ jobs:
           APT_BASE_URL: https://apt.0state.com/icey
         run: bash ./scripts/package-manager-check.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-managers-rendered
           path: .stage/package-managers/rendered
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: apt-repo
           path: |
@@ -122,10 +122,10 @@ jobs:
             echo "Skipping Homebrew publish: HOMEBREW_TAP_TOKEN is not configured."
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.publish == 'true'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.gate.outputs.publish == 'true'
         with:
           name: package-managers-rendered
@@ -133,7 +133,7 @@ jobs:
 
       - name: Checkout tap repo
         if: steps.gate.outputs.publish == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: nilstate/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -173,16 +173,16 @@ jobs:
             echo "Skipping APT publish: PACKAGES_REPO_TOKEN is not configured."
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.publish == 'true'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.gate.outputs.publish == 'true'
         with:
           name: apt-repo
           path: .stage/apt-repo
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.gate.outputs.publish == 'true'
         with:
           name: package-managers-rendered
@@ -190,7 +190,7 @@ jobs:
 
       - name: Checkout package repo
         if: steps.gate.outputs.publish == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: nilstate/0state-packages
           token: ${{ secrets.PACKAGES_REPO_TOKEN }}
@@ -239,10 +239,10 @@ jobs:
             echo "Skipping AUR publish: AUR_SSH_PRIVATE_KEY is not configured."
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.publish == 'true'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.gate.outputs.publish == 'true'
         with:
           name: package-managers-rendered
