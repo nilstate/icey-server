@@ -87,6 +87,7 @@ jobs:
         with:
           name: package-managers-rendered
           path: .stage/package-managers/rendered
+          include-hidden-files: true
 
       - name: Upload APT bundle
         uses: actions/upload-artifact@v7

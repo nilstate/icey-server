@@ -1,0 +1,76 @@
+name: Recover AUR publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: "Original tag release workflow run ID"
+        required: true
+
+jobs:
+  publish-aur:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate release run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
+          [[ "$RELEASE_RUN_ID" =~ ^[0-9]+$ ]]
+          test -n "$AUR_SSH_PRIVATE_KEY"
+          version="$(tr -d '[:space:]' < VERSION)"
+          tag="v$version"
+          tag_sha="$(git rev-parse "$tag^{commit}")"
+          run_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID" --jq .head_sha)"
+          test "$tag_sha" = "$run_sha"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-managers-rendered
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+          path: .stage/original-rendered
+
+      - name: Recreate missing hidden manifest from published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir .
+          OUT_DIR="$GITHUB_WORKSPACE/.stage/recovered-rendered" bash scripts/render-package-managers.sh
+          diff -r --exclude=.SRCINFO .stage/original-rendered .stage/recovered-rendered
+          test -s .stage/recovered-rendered/aur/.SRCINFO
+
+      - name: Publish exact AUR files
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND='ssh -i ~/.ssh/aur -o IdentitiesOnly=yes'
+          git clone ssh://aur@aur.archlinux.org/icey-server.git .stage/aur-repo
+          RENDERED_DIR="$GITHUB_WORKSPACE/.stage/recovered-rendered" \
+            AUR_REPO_DIR="$GITHUB_WORKSPACE/.stage/aur-repo" \
+            bash scripts/publish-aur.sh
+          git -C .stage/aur-repo config user.name 'github-actions[bot]'
+          git -C .stage/aur-repo config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C .stage/aur-repo add PKGBUILD .SRCINFO
+          if ! git -C .stage/aur-repo diff --cached --quiet; then
+            git -C .stage/aur-repo commit -m "chore(icey-server): publish $(tr -d '[:space:]' < VERSION)"
+            git -C .stage/aur-repo push
+          fi
+          expected="$(git -C .stage/aur-repo rev-parse HEAD)"
+          actual="$(git ls-remote ssh://aur@aur.archlinux.org/icey-server.git HEAD | awk '{print $1}')"
+          test "$expected" = "$actual"
