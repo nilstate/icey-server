@@ -14,6 +14,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 LIBRARY_VERSION = (ROOT / "ICEY_VERSION").read_text().strip()
 SERVER_VERSION = (ROOT / "VERSION").read_text().strip()
+HOMEPAGE = "https://0state.com/icey"
 HEADERS = {"User-Agent": "icey-release-audit/1.0"}
 
 
@@ -75,6 +76,18 @@ def aur_version(package):
     return extract
 
 
+def aur_homepage(package):
+    def extract(body):
+        matches = [row for row in json.loads(body)["results"] if row["Name"] == package]
+        return matches[0]["URL"].rstrip("/") if matches else None
+    return extract
+
+
+def docker_homepage(body):
+    description = json.loads(body).get("full_description") or ""
+    return (version_in(r"\[Project homepage\]\((https?://[^)]+)\)", description) or "").rstrip("/")
+
+
 def ppa_binary_version(body):
     entries = json.loads(body)["entries"]
     return entries[0]["binary_package_version"].split("-", 1)[0] if entries else None
@@ -82,10 +95,6 @@ def ppa_binary_version(body):
 
 def apt_version(body):
     return version_in(r"^Package: icey-server\nVersion: (\S+)", body)
-
-
-def crate_version(body):
-    return json.loads(body)["crate"]["max_stable_version"]
 
 
 def main():
@@ -118,6 +127,27 @@ def main():
          "https://api.launchpad.net/1.0/~0state/+archive/ubuntu/icey?ws.op=getPublishedBinaries&binary_name=libicey-dev&exact_match=true&status=Published", ppa_binary_version),
         ("Icey Server APT", "owned", SERVER_VERSION,
          "https://apt.0state.com/icey/dists/stable/main/binary-amd64/Packages", apt_version),
+        ("Icey GitHub homepage", "owned", HOMEPAGE,
+         "https://api.github.com/repos/nilstate/icey",
+         lambda b: (json.loads(b).get("homepage") or "").rstrip("/")),
+        ("Icey Server GitHub homepage", "owned", HOMEPAGE,
+         "https://api.github.com/repos/nilstate/icey-server",
+         lambda b: (json.loads(b).get("homepage") or "").rstrip("/")),
+        ("Icey Docker homepage", "owned", HOMEPAGE,
+         "https://hub.docker.com/v2/repositories/0state/icey/", docker_homepage),
+        ("Icey Server Docker homepage", "owned", HOMEPAGE,
+         "https://hub.docker.com/v2/repositories/0state/icey-server/", docker_homepage),
+        ("Icey Homebrew homepage", "owned", HOMEPAGE,
+         "https://raw.githubusercontent.com/nilstate/homebrew-tap/main/Formula/icey.rb",
+         lambda b: (version_in(r'^  homepage "([^"]+)"', b) or "").rstrip("/")),
+        ("Icey Server Homebrew homepage", "owned", HOMEPAGE,
+         "https://raw.githubusercontent.com/nilstate/homebrew-tap/main/Formula/icey-server.rb",
+         lambda b: (version_in(r'^  homepage "([^"]+)"', b) or "").rstrip("/")),
+        ("Icey AUR homepage", "owned", HOMEPAGE, aur, aur_homepage("icey")),
+        ("Icey Server AUR homepage", "owned", HOMEPAGE, aur, aur_homepage("icey-server")),
+        ("Icey Server APT homepage", "owned", HOMEPAGE,
+         "https://apt.0state.com/icey/dists/stable/main/binary-amd64/Packages",
+         lambda b: (version_in(r'^Homepage: (\S+)', b) or "").rstrip("/")),
         ("Icey vcpkg", "upstream", LIBRARY_VERSION,
          "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/icey/vcpkg.json",
          lambda b: json.loads(b)["version"]),
@@ -149,10 +179,16 @@ def main():
     for name in ("icey", "icey-sys"):
         url = f"https://crates.io/api/v1/crates/{name}"
         body, error = fetch(url)
+        crate = json.loads(body)["crate"] if body else {}
+        homepage = (crate.get("homepage") or "").rstrip("/")
         bindings.append(dict(name=f"Rust {name}", owner="bindings",
-                             live=crate_version(body) if body else None,
+                             live=crate.get("max_stable_version"),
                              status="listed" if body else "unknown", url=url,
                              detail=error))
+        bindings.append(dict(name=f"Rust {name} homepage", owner="owned",
+                             expected=HOMEPAGE, live=homepage or None,
+                             status="current" if homepage == HOMEPAGE else "unknown" if error else "stale",
+                             url=url, detail=error))
     results += bindings
 
     if args.json:
