@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-eval "$(bash "$ROOT_DIR/scripts/release-context.sh")"
+release_context="$(bash "$ROOT_DIR/scripts/release-context.sh")"
+eval "$release_context"
 SERVER_ARCHIVE="${SERVER_ARCHIVE:-$SERVER_SOURCE_ARCHIVE}"
 ICEY_ARCHIVE="${ICEY_ARCHIVE:-$ICEY_SOURCE_ARCHIVE}"
 SERVER_ARCHIVE_REF="${SERVER_ARCHIVE_REF:-HEAD}"

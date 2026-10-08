@@ -2,10 +2,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-eval "$(bash "$ROOT_DIR/scripts/release-context.sh")"
+release_context="$(bash "$ROOT_DIR/scripts/release-context.sh")"
+eval "$release_context"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/.stage/package-managers/rendered}"
 TEMPLATES_DIR="$ROOT_DIR/packaging/templates"
-eval "$(bash "$ROOT_DIR/scripts/release-manifest.sh")"
+release_manifest="$(bash "$ROOT_DIR/scripts/release-manifest.sh")"
+eval "$release_manifest"
 
 escape_sed() {
   printf '%s' "$1" | sed -e 's/[\\/&|]/\\&/g'

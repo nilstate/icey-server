@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(bash "$SCRIPT_DIR/release-context.sh")"
+release_context="$(bash "$SCRIPT_DIR/release-context.sh")"
+eval "$release_context"
 
 sha256_file() {
   sha256sum "$1" | awk '{print $1}'
