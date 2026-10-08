@@ -2,10 +2,10 @@ PackageIdentifier: 0state.IceyServer
 PackageVersion: @SERVER_VERSION@
 PackageLocale: en-US
 Publisher: 0state
-PublisherUrl: https://github.com/nilstate
+PublisherUrl: https://0state.com/icey/
 PublisherSupportUrl: https://github.com/nilstate/icey-server/issues
 PackageName: icey-server
-PackageUrl: https://github.com/nilstate/icey-server
+PackageUrl: https://0state.com/icey/
 License: AGPL-3.0-or-later
 ShortDescription: Self-hosted source-to-browser server built on icey.
 ManifestType: defaultLocale
