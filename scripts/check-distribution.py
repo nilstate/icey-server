@@ -75,9 +75,9 @@ def aur_version(package):
     return extract
 
 
-def ppa_version(body):
+def ppa_binary_version(body):
     entries = json.loads(body)["entries"]
-    return entries[0]["source_package_version"].split("-", 1)[0] if entries else None
+    return entries[0]["binary_package_version"].split("-", 1)[0] if entries else None
 
 
 def apt_version(body):
@@ -112,8 +112,10 @@ def main():
          lambda b: version_in(r"/download/v([^/]+)/", b)),
         ("Icey AUR", "owned", LIBRARY_VERSION, aur, aur_version("icey")),
         ("Icey Server AUR", "owned", SERVER_VERSION, aur, aur_version("icey-server")),
-        ("Icey Ubuntu PPA", "owned", LIBRARY_VERSION,
-         "https://api.launchpad.net/1.0/~0state/+archive/ubuntu/icey?ws.op=getPublishedSources&source_name=icey&exact_match=true&status=Published", ppa_version),
+        ("Icey Ubuntu PPA runtime", "owned", LIBRARY_VERSION,
+         "https://api.launchpad.net/1.0/~0state/+archive/ubuntu/icey?ws.op=getPublishedBinaries&binary_name=libicey2&exact_match=true&status=Published", ppa_binary_version),
+        ("Icey Ubuntu PPA development", "owned", LIBRARY_VERSION,
+         "https://api.launchpad.net/1.0/~0state/+archive/ubuntu/icey?ws.op=getPublishedBinaries&binary_name=libicey-dev&exact_match=true&status=Published", ppa_binary_version),
         ("Icey Server APT", "owned", SERVER_VERSION,
          "https://apt.0state.com/icey/dists/stable/main/binary-amd64/Packages", apt_version),
         ("Icey vcpkg", "upstream", LIBRARY_VERSION,
