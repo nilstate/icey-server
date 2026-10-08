@@ -17,8 +17,8 @@ icey-server's `MediaCapture::openFile()` recognises libavdevice URL schemes (`av
 ```bash
 brew install cmake pkg-config openssl@3 ffmpeg
 git clone https://github.com/nilstate/icey
-git clone https://github.com/nilstate/icey-cli
-cd icey-cli
+git clone https://github.com/nilstate/icey-server
+cd icey-server
 cmake --preset dev && cmake --build --preset dev
 (cd web && npm install && npm run build)
 make facetime-demo
@@ -39,12 +39,12 @@ Node 20+ for the web UI build.
 
 ## Source layout
 
-icey-cli expects a sibling `icey` source tree. The CMake preset hard-codes `${sourceDir}/../icey`:
+icey-server expects a sibling `icey` source tree. The CMake preset hard-codes `${sourceDir}/../icey`:
 
 ```bash
 cd ~/dev/0state
 git clone https://github.com/nilstate/icey
-git clone https://github.com/nilstate/icey-cli
+git clone https://github.com/nilstate/icey-server
 ```
 
 You should now have:
@@ -52,14 +52,14 @@ You should now have:
 ```text
 ~/dev/0state/
   icey/
-  icey-cli/
+  icey-server/
 ```
 
 If you put them somewhere else, override `ICEY_SOURCE_DIR` when configuring.
 
 ## Build the server
 
-From the `icey-cli` directory:
+From the `icey-server` directory:
 
 ```bash
 cmake --preset dev

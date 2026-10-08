@@ -5,7 +5,7 @@ description: Safely build, validate, package, release, and operate the icey-serv
 
 # icey-server Operator Workflow
 
-This is a portable skill document for agents working in `nilstate/icey-cli`.
+This is a portable skill document for agents working in `nilstate/icey-server`.
 Use it to preserve the repo's build, validation, packaging, and operator bring-up conventions.
 
 The file is useful as plain project documentation. Tools that understand `SKILL.md`, including runx, can optionally pair it with execution, verification, and receipts.

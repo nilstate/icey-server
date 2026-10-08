@@ -1,17 +1,17 @@
 {
-  "version": "@CLI_VERSION@",
+  "version": "@SERVER_VERSION@",
   "description": "Self-hosted source-to-browser server built on icey.",
-  "homepage": "https://github.com/nilstate/icey-cli",
+  "homepage": "https://0state.com/icey/",
   "license": "AGPL-3.0-or-later",
   "url": "@WINDOWS_ZIP_URL@",
   "hash": "@WINDOWS_ZIP_SHA256@",
-  "extract_dir": "icey-server-@CLI_VERSION@-Windows-x86_64",
+  "extract_dir": "icey-server-@SERVER_VERSION@-Windows-x86_64",
   "bin": "bin/icey-server.exe",
   "checkver": {
-    "github": "https://github.com/nilstate/icey-cli"
+    "github": "https://github.com/nilstate/icey-server"
   },
   "autoupdate": {
-    "url": "https://github.com/nilstate/icey-cli/releases/download/v$version/icey-server-$version-Windows-x86_64.zip",
+    "url": "https://github.com/nilstate/icey-server/releases/download/v$version/icey-server-$version-Windows-x86_64.zip",
     "extract_dir": "icey-server-$version-Windows-x86_64"
   }
 }

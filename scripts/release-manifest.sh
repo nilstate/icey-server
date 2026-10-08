@@ -20,9 +20,9 @@ emit_if_present() {
   printf '%s=%q\n' "$name" "$value"
 }
 
-if [[ -f "$CLI_SOURCE_ARCHIVE" ]]; then
-  emit_if_present CLI_SOURCE_SHA256 "$(sha256_file "$CLI_SOURCE_ARCHIVE")"
-  emit_if_present CLI_SOURCE_SRI "$(sri_sha256_file "$CLI_SOURCE_ARCHIVE")"
+if [[ -f "$SERVER_SOURCE_ARCHIVE" ]]; then
+  emit_if_present SERVER_SOURCE_SHA256 "$(sha256_file "$SERVER_SOURCE_ARCHIVE")"
+  emit_if_present SERVER_SOURCE_SRI "$(sri_sha256_file "$SERVER_SOURCE_ARCHIVE")"
 fi
 
 if [[ -f "$ICEY_SOURCE_ARCHIVE" ]]; then

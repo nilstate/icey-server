@@ -13,14 +13,14 @@ This repo ships package-manager inputs for the full public distribution surface:
 The package model is split intentionally:
 
 - `Homebrew`, `AUR`, and `Nix` are source-build package managers. They build
-  `icey-server` from `icey-cli` plus the matching `icey` source archive.
+  `icey-server` from `icey-server` plus the matching `icey` source archive.
 - `Debian / APT` consumes the generated Linux `amd64` binary package.
 - Published APT repositories can also ship a signing key plus
   `InRelease` / `Release.gpg` metadata when `APT_GPG_KEY_ID` is configured.
 - `winget`, `Scoop`, and `Chocolatey` consume the planned Windows portable zip
   artifact.
 
-The pinned `icey` dependency release lives in [`ICEY_VERSION`](/home/kam/dev/icey-cli/ICEY_VERSION). CI and release workflows now check out that exact `icey` tag instead of floating on `nilstate/icey` `main`.
+The pinned `icey` dependency release lives in [`ICEY_VERSION`](../ICEY_VERSION). CI and release workflows check out that exact `icey` tag.
 
 ## Tracked Files
 
@@ -51,7 +51,7 @@ and rendered manifests for every package manager that has a real artifact.
 
 The manifests assume release assets named like:
 
-- `icey-cli-<version>-source.tar.gz`
+- `icey-server-<version>-source.tar.gz`
 - `icey-<version>-source.tar.gz`
 - `icey-server-<version>-Linux-x86_64.tar.gz`
 - `icey-server-<version>-Linux-x86_64.zip`

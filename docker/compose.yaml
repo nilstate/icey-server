@@ -4,9 +4,9 @@ services:
   icey-server:
     build:
       context: ../..
-      dockerfile: icey-cli/docker/Dockerfile
+      dockerfile: icey-server/docker/Dockerfile
       args:
-        ICEY_SERVER_BINARY: ${ICEY_SERVER_BINARY:-icey-cli/build-dev/src/server/icey-server}
+        ICEY_SERVER_BINARY: ${ICEY_SERVER_BINARY:-icey-server/build-dev/src/server/icey-server}
     image: icey/icey-server:local
     container_name: icey-server
     network_mode: host

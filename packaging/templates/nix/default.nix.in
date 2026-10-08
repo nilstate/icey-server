@@ -10,11 +10,11 @@
 
 stdenv.mkDerivation rec {
   pname = "icey-server";
-  version = "@CLI_VERSION@";
+  version = "@SERVER_VERSION@";
 
   src = fetchurl {
-    url = "@ICEY_CLI_SOURCE_URL@";
-    hash = "@ICEY_CLI_SOURCE_SRI@";
+    url = "@ICEY_SERVER_SOURCE_URL@";
+    hash = "@ICEY_SERVER_SOURCE_SRI@";
   };
 
   iceySrc = fetchurl {
@@ -30,7 +30,7 @@ stdenv.mkDerivation rec {
     tar -xzf $iceySrc
   '';
 
-  sourceRoot = "@ICEY_CLI_SOURCE_DIRNAME@";
+  sourceRoot = "@ICEY_SERVER_SOURCE_DIRNAME@";
 
   buildPhase = ''
     runHook preBuild
@@ -51,7 +51,7 @@ stdenv.mkDerivation rec {
 
   meta = with lib; {
     description = "Self-hosted source-to-browser server built on icey";
-    homepage = "https://github.com/nilstate/icey-cli";
+    homepage = "https://0state.com/icey/";
     license = licenses.agpl3Plus;
     platforms = platforms.linux ++ platforms.darwin;
     mainProgram = "icey-server";

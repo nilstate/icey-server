@@ -55,7 +55,7 @@
 
           meta = with pkgs.lib; {
             description = "Self-hosted source-to-browser server built on icey";
-            homepage = "https://github.com/nilstate/icey-cli";
+            homepage = "https://0state.com/icey/";
             license = licenses.agpl3Plus;
             platforms = platforms.linux ++ platforms.darwin;
             mainProgram = "icey-server";

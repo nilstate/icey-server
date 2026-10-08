@@ -1,11 +1,11 @@
 Package: @DEB_PACKAGE_NAME@
-Version: @CLI_VERSION@
+Version: @SERVER_VERSION@
 Section: net
 Priority: optional
 Architecture: @DEB_ARCH@
 Maintainer: 0state <oss@0state.com>
 Depends: @DEB_DEPENDS@
-Homepage: https://github.com/nilstate/icey-cli
+Homepage: https://0state.com/icey/
 Description: Self-hosted source-to-browser server built on icey
  Single C++ binary for WebRTC media streaming, Symple signalling, TURN relay,
  and the bundled browser UI.

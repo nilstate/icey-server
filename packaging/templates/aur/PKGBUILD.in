@@ -1,5 +1,5 @@
 pkgname=icey-server
-pkgver=@CLI_VERSION@
+pkgver=@SERVER_VERSION@
 pkgrel=1
 pkgdesc='Self-hosted source-to-browser server built on icey'
 arch=('x86_64')
@@ -8,16 +8,16 @@ license=('AGPL3')
 depends=('ffmpeg' 'openssl')
 makedepends=('cmake' 'gcc' 'make' 'nodejs' 'npm' 'pkgconf')
 source=(
-  "icey-cli-${pkgver}.tar.gz::@ICEY_CLI_SOURCE_URL@"
+  "icey-server-${pkgver}.tar.gz::@ICEY_SERVER_SOURCE_URL@"
   "icey-@ICEY_VERSION@.tar.gz::@ICEY_SOURCE_URL@"
 )
 sha256sums=(
-  '@ICEY_CLI_SOURCE_SHA256@'
+  '@ICEY_SERVER_SOURCE_SHA256@'
   '@ICEY_SOURCE_SHA256@'
 )
 
 build() {
-  cd "${srcdir}/@ICEY_CLI_SOURCE_DIRNAME@"
+  cd "${srcdir}/@ICEY_SERVER_SOURCE_DIRNAME@"
   npm --prefix web ci
   npm --prefix web run build
   cmake -S . -B build \
@@ -27,6 +27,6 @@ build() {
 }
 
 package() {
-  cd "${srcdir}/@ICEY_CLI_SOURCE_DIRNAME@"
+  cd "${srcdir}/@ICEY_SERVER_SOURCE_DIRNAME@"
   cmake --install build --prefix "${pkgdir}/usr" --component apps
 }

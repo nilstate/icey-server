@@ -2,6 +2,10 @@
 
 Single C++ binary: WebRTC media streaming + Symple signalling + TURN relay + web UI.
 
+Icey Server is the runnable product built on the [Icey C++ library](https://github.com/nilstate/icey).
+The executable, release archives, container image, and package listings use
+the `icey-server` name.
+
 No Node.js runtime, no third-party services. One binary, two ports (HTTP/WS + TURN).
 
 ## icey Demo
@@ -103,7 +107,7 @@ make publish-aur AUR_REPO_DIR=/path/to/aur-icey-server
 
 That generates and validates:
 
-- `icey-cli-<version>-source.tar.gz`
+- `icey-server-<version>-source.tar.gz`
 - `icey-<version>-source.tar.gz`
 - `icey-server-<version>-Linux-x86_64.tar.gz`
 - `icey-server-<version>-Linux-x86_64.zip`

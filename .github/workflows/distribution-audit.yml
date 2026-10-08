@@ -1,0 +1,17 @@
+name: Distribution Audit
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify owned package listings
+        run: python3 scripts/check-distribution.py --strict

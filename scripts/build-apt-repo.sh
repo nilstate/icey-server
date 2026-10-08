@@ -25,7 +25,7 @@ map_arch() {
 }
 
 DEB_ARCH="${DEB_ARCH:-$(map_arch)}"
-DEB_PATH="${DEB_PATH:-$ROOT_DIR/icey-server_${CLI_VERSION}_${DEB_ARCH}.deb}"
+DEB_PATH="${DEB_PATH:-$ROOT_DIR/icey-server_${SERVER_VERSION}_${DEB_ARCH}.deb}"
 
 if [[ ! -f "$DEB_PATH" ]]; then
   ICEY_SOURCE_DIR="$ICEY_SOURCE_DIR" BUILD_DIR="$BUILD_DIR" "$ROOT_DIR/scripts/build-deb.sh"

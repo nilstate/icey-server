@@ -49,7 +49,7 @@ http://localhost:4500
 The published image and the local Compose build package:
 
 - the `icey-server` application
-- the production web UI build from `icey-cli/web/`
+- the production web UI build from `icey-server/web/`
 - the sample media file at `data/test.mp4`
 
 The published image is available as `0state/icey-server:latest`.
@@ -59,7 +59,7 @@ The local Compose path reuses the existing local build artifacts instead of reco
 If your current binary lives in a different build tree, point Docker at it directly:
 
 ```bash
-ICEY_SERVER_BINARY=icey-cli/build-dev/src/server/icey-server docker compose build
+ICEY_SERVER_BINARY=icey-server/build-dev/src/server/icey-server docker compose build
 docker compose up
 ```
 
@@ -97,7 +97,7 @@ ICEY_SOURCE=/app/media/test.mp4 docker compose up --build
 For the Compose path, `record` mode writes files into:
 
 ```text
-icey-cli/docker/recordings/
+icey-server/docker/recordings/
 ```
 
 For the published image path, `record` mode writes wherever you bind-mount `/app/recordings`.
@@ -108,8 +108,8 @@ For the published image path, `record` mode writes wherever you bind-mount `/app
 - The express path is `docker run --rm --network host 0state/icey-server:latest`.
 - The source path is `docker compose up --build` from this directory.
 - For direct local use, open `http://localhost:4500`.
-- The local Compose build expects the existing `icey-cli/build-dev/src/server/icey-server` binary and `icey-cli/web/dist/` output to be present.
-- The default local Compose context assumes sibling `icey-cli/` and `icey/` checkouts so the demo media file can be copied from `icey/data/test.mp4`.
+- The local Compose build expects the existing `icey-server/build-dev/src/server/icey-server` binary and `icey-server/web/dist/` output to be present.
+- The default local Compose context assumes sibling `icey-server/` and `icey/` checkouts so the demo media file can be copied from `icey/data/test.mp4`.
 - If port `4500` or `3478` is already busy on the host, free it first or override `ICEY_PORT` / `ICEY_TURN_PORT`.
 - For remote NAT testing, set `ICEY_TURN_EXTERNAL_IP` so embedded TURN advertises the right public address.
 - Docker Desktop host networking is not the primary target here. For non-Linux hosts, use the native app README first.
