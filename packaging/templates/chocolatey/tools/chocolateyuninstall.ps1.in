@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $toolsDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$installDir = Join-Path $toolsDir 'icey-server-@CLI_VERSION@-Windows-x86_64'
+$installDir = Join-Path $toolsDir 'icey-server-@SERVER_VERSION@-Windows-x86_64'
 
 if (Test-Path $installDir) {
   Remove-Item -Path $installDir -Recurse -Force

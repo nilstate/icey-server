@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-eval "$(bash "$ROOT_DIR/scripts/release-context.sh")"
+release_context="$(bash "$ROOT_DIR/scripts/release-context.sh")"
+eval "$release_context"
 BUILD_DIR="${BUILD_DIR:-$ROOT_DIR/build-dev}"
 STAGE_DIR="${STAGE_DIR:-$ROOT_DIR/.stage/release-check}"
 

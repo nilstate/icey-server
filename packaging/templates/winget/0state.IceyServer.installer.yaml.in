@@ -1,5 +1,5 @@
 PackageIdentifier: 0state.IceyServer
-PackageVersion: @CLI_VERSION@
+PackageVersion: @SERVER_VERSION@
 Installers:
   - Architecture: x64
     InstallerType: zip

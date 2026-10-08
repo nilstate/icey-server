@@ -4,13 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      publish_package_managers:
-        description: "Also publish Homebrew, AUR, and APT from this run"
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   package-linux:
@@ -18,9 +11,8 @@ jobs:
     permissions:
       contents: write
     outputs:
-      cli_version: ${{ steps.context.outputs.cli_version }}
+      server_version: ${{ steps.context.outputs.server_version }}
       icey_version: ${{ steps.context.outputs.icey_version }}
-      publish_package_managers: ${{ steps.context.outputs.publish_package_managers }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,16 +20,9 @@ jobs:
 
       - name: Read release context
         id: context
-        env:
-          WORKFLOW_PUBLISH: ${{ github.event.inputs.publish_package_managers || 'false' }}
         run: |
-          echo "cli_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+          echo "server_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
           echo "icey_version=$(tr -d '[:space:]' < ICEY_VERSION)" >> "$GITHUB_OUTPUT"
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" || "$WORKFLOW_PUBLISH" == "true" ]]; then
-            echo "publish_package_managers=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish_package_managers=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Checkout icey
         uses: actions/checkout@v7
@@ -48,12 +33,7 @@ jobs:
           submodules: recursive
 
       - name: Validate release metadata
-        run: |
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
-            bash ./scripts/validate-release-metadata.sh "${GITHUB_REF_NAME}"
-          else
-            bash ./scripts/validate-release-metadata.sh
-          fi
+        run: bash ./scripts/validate-release-metadata.sh "${GITHUB_REF_NAME}"
 
       - name: Install dependencies
         run: |
@@ -62,9 +42,15 @@ jobs:
             gcc-13 g++-13 \
             cmake \
             dpkg-dev \
+            gnupg \
             libssl-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
             unzip zip
+
+      - name: Import APT signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: bash ./scripts/prepare-apt-signing.sh
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -79,77 +65,22 @@ jobs:
           CXX: g++-13
           ICEY_SOURCE_DIR: ${{ github.workspace }}/icey
           BUILD_DIR: ${{ github.workspace }}/build-release
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
         run: bash ./scripts/package-manager-check.sh
 
-      - name: Check Docker Hub credentials
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          test -n "$DOCKERHUB_USERNAME" || {
-            echo "DOCKERHUB_USERNAME is required to publish the 0state/icey-server image" >&2
-            exit 1
-          }
-          test -n "$DOCKERHUB_TOKEN" || {
-            echo "DOCKERHUB_TOKEN is required to publish the 0state/icey-server image" >&2
-            exit 1
-          }
-
-      - name: Derive image version
-        if: startsWith(github.ref, 'refs/tags/')
-        id: image_version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Docker Buildx
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to Docker Hub
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract image metadata
-        if: startsWith(github.ref, 'refs/tags/')
-        id: image_meta
-        uses: docker/metadata-action@v6
-        with:
-          images: 0state/icey-server
-          tags: |
-            type=raw,value=${{ steps.image_version.outputs.version }}
-            type=raw,value=latest
-
-      - name: Build and push image
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          build-args: |
-            ICEY_SERVER_BINARY=build-release/src/server/icey-server
-            ICEY_WEB_ROOT=web/dist
-            ICEY_SAMPLE_MEDIA=icey/data/test.mp4
-            ICEY_ENTRYPOINT=docker/entrypoint.sh
-          tags: ${{ steps.image_meta.outputs.tags }}
-          labels: ${{ steps.image_meta.outputs.labels }}
-
       - name: Upload release assets
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            icey-cli-*-source.tar.gz
-            icey-*-source.tar.gz
-            icey-server-*-Linux-x86_64.tar.gz
-            icey-server-*-Linux-x86_64.zip
+            icey-server-${{ steps.context.outputs.server_version }}-source.tar.gz
+            icey-${{ steps.context.outputs.icey_version }}-source.tar.gz
+            icey-server-${{ steps.context.outputs.server_version }}-Linux-x86_64.tar.gz
+            icey-server-${{ steps.context.outputs.server_version }}-Linux-x86_64.zip
             icey-server-Linux-x86_64.tar.gz
             icey-server-Linux-x86_64.zip
-            icey-server_*.deb
-            icey-server-apt-repo-*.tar.gz
+            icey-server_${{ steps.context.outputs.server_version }}_amd64.deb
+            icey-server-apt-repo-${{ steps.context.outputs.server_version }}.tar.gz
+          fail_on_unmatched_files: true
 
       - name: Upload manifest bundle
         uses: actions/upload-artifact@v7
@@ -165,10 +96,110 @@ jobs:
             .stage/apt-repo
             .stage/apt-public
 
+      - name: Upload image inputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: icey-server-image-inputs
+          path: |
+            build-release/src/server/icey-server
+            web/dist
+            icey/data/test.mp4
+            docker/entrypoint.sh
+          if-no-files-found: error
+
+  publish-image:
+    runs-on: ubuntu-24.04
+    needs: package-linux
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: icey-server-image-inputs
+          path: .
+
+      - name: Check Docker Hub credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || {
+            echo "DOCKERHUB_USERNAME is required to publish the 0state/icey-server image" >&2
+            exit 1
+          }
+          test -n "$DOCKERHUB_TOKEN" || {
+            echo "DOCKERHUB_TOKEN is required to publish the 0state/icey-server image" >&2
+            exit 1
+          }
+
+      - name: Derive image version
+        id: image_version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: image_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: 0state/icey-server
+          tags: |
+            type=raw,value=${{ steps.image_version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build image once
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          load: true
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            ICEY_SERVER_BINARY=build-release/src/server/icey-server
+            ICEY_WEB_ROOT=web/dist
+            ICEY_SAMPLE_MEDIA=icey/data/test.mp4
+            ICEY_ENTRYPOINT=docker/entrypoint.sh
+          tags: ${{ steps.image_meta.outputs.tags }}
+          labels: ${{ steps.image_meta.outputs.labels }}
+
+      - name: Smoke and publish the verified image
+        env:
+          IMAGE_VERSION: ${{ steps.image_version.outputs.version }}
+        run: |
+          docker run -d --name icey-release-smoke -p 127.0.0.1:14500:4500 "0state/icey-server:${IMAGE_VERSION}"
+          trap 'docker rm -f icey-release-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..20}; do
+            if curl -fsS http://127.0.0.1:14500/api/health >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" == 20 ]]; then
+              docker logs icey-release-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          docker rm -f icey-release-smoke >/dev/null
+          docker push "0state/icey-server:${IMAGE_VERSION}"
+          docker push 0state/icey-server:latest
+          version_digest="$(docker buildx imagetools inspect "0state/icey-server:${IMAGE_VERSION}" | awk '/^Digest:/ {print $2; exit}')"
+          latest_digest="$(docker buildx imagetools inspect 0state/icey-server:latest | awk '/^Digest:/ {print $2; exit}')"
+          test -n "$version_digest"
+          test "$version_digest" = "$latest_digest"
+          echo "Verified 0state/icey-server:${IMAGE_VERSION} at ${version_digest}"
+
   publish-homebrew:
     runs-on: ubuntu-24.04
     needs: package-linux
-    if: needs.package-linux.outputs.publish_package_managers == 'true'
     steps:
       - name: Check Homebrew publish credentials
         id: gate
@@ -178,8 +209,8 @@ jobs:
           if [[ -n "${HOMEBREW_TAP_TOKEN:-}" ]]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping Homebrew publish: HOMEBREW_TAP_TOKEN is not configured."
+            echo "Cannot publish Homebrew: HOMEBREW_TAP_TOKEN is not configured." >&2
+            exit 1
           fi
 
       - uses: actions/checkout@v7
@@ -214,13 +245,12 @@ jobs:
           if git -C .stage/homebrew-tap diff --cached --quiet; then
             exit 0
           fi
-          git -C .stage/homebrew-tap commit -m "icey-server ${{ needs.package-linux.outputs.cli_version }}"
+          git -C .stage/homebrew-tap commit -m "chore(icey-server): publish ${{ needs.package-linux.outputs.server_version }}"
           git -C .stage/homebrew-tap push
 
   publish-apt-repo:
     runs-on: ubuntu-24.04
     needs: package-linux
-    if: needs.package-linux.outputs.publish_package_managers == 'true'
     steps:
       - name: Check package repo credentials
         id: gate
@@ -230,8 +260,8 @@ jobs:
           if [[ -n "${PACKAGES_REPO_TOKEN:-}" ]]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping APT publish: PACKAGES_REPO_TOKEN is not configured."
+            echo "Cannot publish APT: PACKAGES_REPO_TOKEN is not configured." >&2
+            exit 1
           fi
 
       - uses: actions/checkout@v7
@@ -277,13 +307,12 @@ jobs:
           if git -C .stage/0state-packages diff --cached --quiet; then
             exit 0
           fi
-          git -C .stage/0state-packages commit -m "icey-server ${{ needs.package-linux.outputs.cli_version }}"
+          git -C .stage/0state-packages commit -m "chore(icey-server): publish ${{ needs.package-linux.outputs.server_version }}"
           git -C .stage/0state-packages push
 
   publish-aur:
     runs-on: ubuntu-24.04
     needs: package-linux
-    if: needs.package-linux.outputs.publish_package_managers == 'true'
     steps:
       - name: Check AUR publish credentials
         id: gate
@@ -292,13 +321,13 @@ jobs:
           AUR_PUBLISH_ENABLED: ${{ vars.AUR_PUBLISH_ENABLED }}
         run: |
           if [[ "${AUR_PUBLISH_ENABLED:-false}" != "true" ]]; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping AUR publish: AUR_PUBLISH_ENABLED is not enabled. Use make publish-aur AUR_REPO_DIR=/path/to/aur-icey-server for the local fallback."
+            echo "Cannot publish AUR: AUR_PUBLISH_ENABLED is not enabled. Use make publish-aur AUR_REPO_DIR=/path/to/aur-icey-server for the local fallback." >&2
+            exit 1
           elif [[ -n "${AUR_SSH_PRIVATE_KEY:-}" ]]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping AUR publish: AUR_SSH_PRIVATE_KEY is not configured."
+            echo "Cannot publish AUR: AUR_SSH_PRIVATE_KEY is not configured." >&2
+            exit 1
           fi
 
       - uses: actions/checkout@v7
@@ -343,5 +372,16 @@ jobs:
           if git -C .stage/aur-repo diff --cached --quiet; then
             exit 0
           fi
-          git -C .stage/aur-repo commit -m "icey-server ${{ needs.package-linux.outputs.cli_version }}"
+          git -C .stage/aur-repo commit -m "chore(icey-server): publish ${{ needs.package-linux.outputs.server_version }}"
           git -C .stage/aur-repo push
+
+  verify-distribution:
+    runs-on: ubuntu-24.04
+    needs: [package-linux, publish-image, publish-homebrew, publish-apt-repo, publish-aur]
+    if: always() && startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read back owned package listings
+        run: python3 scripts/check-distribution.py --strict

@@ -9,7 +9,6 @@ APT_PUBLIC_DIR="${APT_PUBLIC_DIR:-$ROOT_DIR/.stage/apt-public}"
 APT_LIST_SOURCE="${APT_LIST_SOURCE:-$ROOT_DIR/.stage/package-managers/rendered/apt/icey-server.list}"
 APT_BASE_URL="${APT_BASE_URL:-https://apt.0state.com/icey}"
 DEST_DIR="$PACKAGES_REPO_DIR/$APT_REPO_PATH"
-HAS_PUBLIC_KEY=0
 
 if [[ ! -d "$APT_REPO_ROOT/dists" ]]; then
   echo "APT repository root missing or incomplete: $APT_REPO_ROOT" >&2
@@ -20,6 +19,23 @@ if [[ ! -d "$PACKAGES_REPO_DIR/.git" ]]; then
   echo "Package repository root missing or not a git checkout: $PACKAGES_REPO_DIR" >&2
   exit 1
 fi
+
+for required in \
+  "$APT_REPO_ROOT/dists/stable/InRelease" \
+  "$APT_REPO_ROOT/dists/stable/Release.gpg" \
+  "$APT_REPO_ROOT/dists/stable/Release" \
+  "$APT_PUBLIC_DIR/icey-archive-keyring.gpg" \
+  "$APT_PUBLIC_DIR/icey-archive-keyring.asc"; do
+  if [[ ! -f "$required" ]]; then
+    echo "Signed APT repository is incomplete: $required" >&2
+    exit 1
+  fi
+done
+gpgv --keyring "$APT_PUBLIC_DIR/icey-archive-keyring.gpg" \
+  "$APT_REPO_ROOT/dists/stable/Release.gpg" \
+  "$APT_REPO_ROOT/dists/stable/Release"
+gpgv --keyring "$APT_PUBLIC_DIR/icey-archive-keyring.gpg" \
+  "$APT_REPO_ROOT/dists/stable/InRelease"
 
 mkdir -p "$PACKAGES_REPO_DIR"
 touch "$PACKAGES_REPO_DIR/.nojekyll"
@@ -32,10 +48,6 @@ if [[ -d "$APT_PUBLIC_DIR" ]]; then
   find "$APT_PUBLIC_DIR" -maxdepth 1 -type f \
     \( -name '*.asc' -o -name '*.gpg' \) \
     -exec cp {} "$DEST_DIR/" \;
-fi
-
-if [[ -f "$DEST_DIR/icey-archive-keyring.gpg" ]]; then
-  HAS_PUBLIC_KEY=1
 fi
 
 if [[ -f "$APT_LIST_SOURCE" ]]; then
@@ -85,8 +97,7 @@ python3 - <<PY
 from pathlib import Path
 path = Path(r"$DEST_DIR/index.html")
 text = path.read_text().replace("APT_BASE_URL_PLACEHOLDER", r"$APT_BASE_URL")
-if $HAS_PUBLIC_KEY:
-    install_block = """<p>Install the signing key:</p>
+install_block = """<p>Install the signing key:</p>
       <pre><code>curl -fsSL APT_BASE_URL_PLACEHOLDER/icey-archive-keyring.gpg | \\
 sudo tee /usr/share/keyrings/icey-archive-keyring.gpg >/dev/null</code></pre>
       <p>Add the repository:</p>
@@ -97,11 +108,6 @@ sudo apt update</code></pre>
         <li><a href="./icey-server.list">icey-server.list</a></li>
         <li><a href="./icey-archive-keyring.gpg">icey-archive-keyring.gpg</a></li>
         <li><a href="./icey-archive-keyring.asc">icey-archive-keyring.asc</a></li>
-      </ul>"""
-else:
-    install_block = """<p>The repository is published, but no signing key was bundled with this build.</p>
-      <ul>
-        <li><a href="./icey-server.list">icey-server.list</a></li>
       </ul>"""
 text = text.replace("APT_INSTALL_BLOCK_PLACEHOLDER", install_block)
 text = text.replace("APT_BASE_URL_PLACEHOLDER", r"$APT_BASE_URL")

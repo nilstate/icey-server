@@ -1,8 +1,8 @@
 class IceyServer < Formula
   desc "Self-hosted source-to-browser server built on icey"
-  homepage "https://github.com/nilstate/icey-cli"
-  url "@ICEY_CLI_SOURCE_URL@"
-  sha256 "@ICEY_CLI_SOURCE_SHA256@"
+  homepage "https://0state.com/icey/"
+  url "@ICEY_SERVER_SOURCE_URL@"
+  sha256 "@ICEY_SERVER_SOURCE_SHA256@"
   license "AGPL-3.0-or-later"
 
   depends_on "cmake" => :build

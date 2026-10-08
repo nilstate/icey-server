@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 file(READ VERSION _ver)
 string(STRIP "${_ver}" _ver)
-project(icey-cli VERSION ${_ver} LANGUAGES CXX)
+project(icey-server VERSION ${_ver} LANGUAGES CXX)
 
 include(GNUInstallDirs)
 

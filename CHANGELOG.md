@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.4 - 2026-10-08
+
+- Pin Icey 2.5.1 to restore builds with FFmpeg 8.
+- Use the Icey Server repository, source archive, and package names consistently.
+- Publish GitHub download assets independently of Docker Hub credentials, then build the image from the tested release binary and web assets.
+- Check public release listings for version drift on a daily schedule.
+
 - Security: `/artifacts/` downloads (recordings, snapshots, motion clips) now require the auth token when one is configured, matching the API and signalling. Plain links may pass the token as a `token` query parameter; the web UI appends it automatically.
 - Security hardening recorded from earlier unreleased commits: control-plane protection (auth on `/api/*` except `/api/health`, authenticated WebSocket signalling, status path scrubbing) and CLI port argument validation.
 - Port conflicts and invalid listen addresses now fail startup with an actionable error and a non-zero exit, instead of an asynchronous debug-level log followed by a success banner. Both HTTP/WS and TURN ports are probe-checked (TCP and UDP).

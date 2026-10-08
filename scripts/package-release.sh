@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-eval "$(bash "$ROOT_DIR/scripts/release-context.sh")"
+release_context="$(bash "$ROOT_DIR/scripts/release-context.sh")"
+eval "$release_context"
 BUILD_DIR="${BUILD_DIR:-$ROOT_DIR/build-release}"
-PACKAGE_NAME="icey-server-${CLI_VERSION}-$(uname -s)-$(uname -m)"
+PACKAGE_NAME="icey-server-${SERVER_VERSION}-$(uname -s)-$(uname -m)"
 STAGE_ROOT="${STAGE_ROOT:-$ROOT_DIR/.stage/package-release}"
 PACKAGE_ROOT="$STAGE_ROOT/$PACKAGE_NAME"
 PACKAGE_PATH="$ROOT_DIR/${PACKAGE_NAME}.tar.gz"

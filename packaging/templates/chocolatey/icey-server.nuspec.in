@@ -2,16 +2,16 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>icey-server</id>
-    <version>@CLI_VERSION@</version>
+    <version>@SERVER_VERSION@</version>
     <title>icey-server</title>
     <authors>0state</authors>
-    <projectUrl>https://github.com/nilstate/icey-cli</projectUrl>
-    <licenseUrl>https://github.com/nilstate/icey-cli/blob/main/LICENSE.md</licenseUrl>
+    <projectUrl>https://0state.com/icey/</projectUrl>
+    <licenseUrl>https://github.com/nilstate/icey-server/blob/main/LICENSE.md</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <projectSourceUrl>https://github.com/nilstate/icey-cli</projectSourceUrl>
+    <projectSourceUrl>https://github.com/nilstate/icey-server</projectSourceUrl>
     <tags>icey webrtc media turn symple realtime</tags>
     <summary>Self-hosted source-to-browser server built on icey.</summary>
     <description>Self-hosted source-to-browser server built on icey.</description>
-    <releaseNotes>https://github.com/nilstate/icey-cli/releases/tag/v@CLI_VERSION@</releaseNotes>
+    <releaseNotes>https://github.com/nilstate/icey-server/releases/tag/v@SERVER_VERSION@</releaseNotes>
   </metadata>
 </package>
