@@ -26,6 +26,7 @@ tar -tzf "$APT_REPO_ARCHIVE" >/dev/null
 
 test -f "$RENDERED_DIR/homebrew/icey-server.rb"
 test -f "$RENDERED_DIR/aur/PKGBUILD"
+test -f "$RENDERED_DIR/aur/.SRCINFO"
 test -f "$RENDERED_DIR/apt/icey-server.list"
 test -f "$RENDERED_DIR/nix/default.nix"
 test -f "$RENDERED_DIR/SHA256SUMS.txt"
