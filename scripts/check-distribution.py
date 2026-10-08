@@ -3,6 +3,7 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import gzip
 import json
 from pathlib import Path
 import re
@@ -21,7 +22,8 @@ HEADERS = {"User-Agent": "icey-release-audit/1.0"}
 def fetch(url):
     try:
         with urlopen(Request(url, headers=HEADERS), timeout=20) as response:
-            return response.read().decode(), None
+            payload = response.read()
+            return (gzip.decompress(payload) if url.endswith(".gz") else payload).decode(), None
     except HTTPError as error:
         return None, f"HTTP {error.code}"
     except (URLError, TimeoutError) as error:
@@ -97,6 +99,15 @@ def apt_version(body):
     return version_in(r"^Package: icey-server\nVersion: (\S+)", body)
 
 
+def apt_package_homepage(package):
+    def extract(body):
+        for stanza in body.split("\n\n"):
+            if version_in(r"^Package: (\S+)", stanza) == package:
+                return (version_in(r"^Homepage: (\S+)", stanza) or "").rstrip("/")
+        return None
+    return extract
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict", action="store_true", help="fail when an owned release surface drifts")
@@ -148,6 +159,12 @@ def main():
         ("Icey Server APT homepage", "owned", HOMEPAGE,
          "https://apt.0state.com/icey/dists/stable/main/binary-amd64/Packages",
          lambda b: (version_in(r'^Homepage: (\S+)', b) or "").rstrip("/")),
+        ("Icey Ubuntu PPA runtime homepage", "owned", HOMEPAGE,
+         "https://ppa.launchpadcontent.net/0state/icey/ubuntu/dists/noble/main/binary-amd64/Packages.gz",
+         apt_package_homepage("libicey2")),
+        ("Icey Ubuntu PPA development homepage", "owned", HOMEPAGE,
+         "https://ppa.launchpadcontent.net/0state/icey/ubuntu/dists/noble/main/binary-amd64/Packages.gz",
+         apt_package_homepage("libicey-dev")),
         ("Icey vcpkg", "upstream", LIBRARY_VERSION,
          "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/icey/vcpkg.json",
          lambda b: json.loads(b)["version"]),
