@@ -1,5 +1,7 @@
 # icey-server
 
+[Project homepage](https://0state.com/icey)
+
 Single C++ binary: WebRTC media streaming + Symple signalling + TURN relay + web UI.
 
 Icey Server is the runnable product built on the [Icey C++ library](https://github.com/nilstate/icey).
