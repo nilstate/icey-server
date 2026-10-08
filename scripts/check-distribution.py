@@ -4,10 +4,16 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import gzip
+import hashlib
+import io
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import sys
+import tarfile
+import tempfile
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -44,7 +50,8 @@ def check(surface):
                     url=url, detail=error)
     try:
         live = extract(body)
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+    except (KeyError, TypeError, ValueError, OSError, subprocess.CalledProcessError,
+            tarfile.TarError) as error:
         return dict(name=name, owner=owner, expected=expected, live=None,
                     status="unknown", url=url, detail=str(error))
     status = "current" if live == expected else "stale" if live else "missing"
@@ -99,11 +106,48 @@ def apt_version(body):
     return version_in(r"^Package: icey-server\nVersion: (\S+)", body)
 
 
-def apt_package_homepage(package):
+def deb_homepage(url, expected_sha256):
+    with urlopen(Request(url, headers=HEADERS), timeout=20) as response:
+        payload = response.read()
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise ValueError("PPA binary checksum does not match package index")
+    with tempfile.NamedTemporaryFile(suffix=".deb") as deb:
+        deb.write(payload)
+        deb.flush()
+        if shutil.which("dpkg-deb"):
+            result = subprocess.run(["dpkg-deb", "-f", deb.name, "Homepage"],
+                                    capture_output=True, text=True, check=True)
+            return result.stdout.strip().rstrip("/")
+
+        members = subprocess.run(["ar", "t", deb.name], capture_output=True,
+                                 text=True, check=True).stdout.splitlines()
+        control_name = next((name for name in members if name.startswith("control.tar.")), None)
+        if not control_name:
+            raise ValueError("Debian control archive not found")
+        archive = subprocess.run(["ar", "p", deb.name, control_name],
+                                 capture_output=True, check=True).stdout
+        if control_name.endswith(".zst"):
+            archive = subprocess.run(["zstd", "-dc"], input=archive,
+                                     capture_output=True, check=True).stdout
+        with tarfile.open(fileobj=io.BytesIO(archive)) as control:
+            body = control.extractfile("./control").read().decode()
+        return (version_in(r"^Homepage: (\S+)", body) or "").rstrip("/")
+
+
+def apt_package_homepage(package, inspect_binary=False):
     def extract(body):
         for stanza in body.split("\n\n"):
             if version_in(r"^Package: (\S+)", stanza) == package:
-                return (version_in(r"^Homepage: (\S+)", stanza) or "").rstrip("/")
+                if inspect_binary and (version_in(r"^Version: (\S+)", stanza) or "").split("-", 1)[0] != LIBRARY_VERSION:
+                    raise ValueError(f"{package} PPA index has not reached {LIBRARY_VERSION}")
+                homepage = (version_in(r"^Homepage: (\S+)", stanza) or "").rstrip("/")
+                if homepage or not inspect_binary:
+                    return homepage
+                filename = version_in(r"^Filename: (\S+)", stanza)
+                sha256 = version_in(r"^SHA256: (\S+)", stanza)
+                if not filename or not sha256:
+                    raise ValueError(f"{package} PPA index lacks Filename or SHA256")
+                return deb_homepage(f"https://ppa.launchpadcontent.net/0state/icey/ubuntu/{filename}", sha256)
         return None
     return extract
 
@@ -161,10 +205,10 @@ def main():
          lambda b: (version_in(r'^Homepage: (\S+)', b) or "").rstrip("/")),
         ("Icey Ubuntu PPA runtime homepage", "owned", HOMEPAGE,
          "https://ppa.launchpadcontent.net/0state/icey/ubuntu/dists/noble/main/binary-amd64/Packages.gz",
-         apt_package_homepage("libicey2")),
+         apt_package_homepage("libicey2", inspect_binary=True)),
         ("Icey Ubuntu PPA development homepage", "owned", HOMEPAGE,
          "https://ppa.launchpadcontent.net/0state/icey/ubuntu/dists/noble/main/binary-amd64/Packages.gz",
-         apt_package_homepage("libicey-dev")),
+         apt_package_homepage("libicey-dev", inspect_binary=True)),
         ("Icey vcpkg", "upstream", LIBRARY_VERSION,
          "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/icey/vcpkg.json",
          lambda b: json.loads(b)["version"]),
